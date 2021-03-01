@@ -109,7 +109,6 @@
 		<project.build.javaVersion>1.7</project.build.javaVersion>
 		<snapshotDependencyAllowed>true</snapshotDependencyAllowed>
 		<javadoc.doclint>none</javadoc.doclint>
-		<skip.revapi>true</skip.revapi>
 	</properties>
 
 	<distributionManagement>
@@ -736,7 +735,7 @@
 				<jdk>[1.8,)</jdk>
 				<property>
 					<name>revapi.skip</name>
-					<value>${skip.revapi}</value>
+					<value>!true</value>
 				</property>
 			</activation>
 			<build>
