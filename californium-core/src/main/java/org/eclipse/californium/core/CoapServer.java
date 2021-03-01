@@ -187,6 +187,68 @@ public class CoapServer implements ServerInterface {
 		}
 	}
 
+	/**
+	 * Constructs a default server with specified MessageDeliverer. The server starts after the method
+	 * {@link #start()} is called.
+	 *
+	 * @param messageDeliverer the custom messageDeliverer to use.
+	 *                            If {@code null} will use default messageDeliverer.
+	 */
+	public CoapServer(ServerMessageDeliverer messageDeliverer) {
+		this(NetworkConfig.getStandard(), messageDeliverer);
+	}
+
+	/**
+	 * Constructs a server with the specified configuration that listens to the
+	 * specified ports and with specified ServerMessageDeliverer. The server starts after the method
+	 * {@link #start()} is called. If a server starts and has no specific ports
+	 * assigned, it will bind to CoAP's default port 5683. If a server starts
+	 * and has no specific ServerMessageDeliverer assigned, it will assign the default ServerMessageDeliverer.
+	 *
+	 * @param config the configuration, if {@code null} the configuration
+	 * 			returned by {@link NetworkConfig#getStandard()} is used.
+	 * @param messageDeliverer the custom ServerMessageDeliverer to use.
+	 *                            If {@code null} will use default messageDeliverer.
+	 * @param ports the ports to bind to. If empty or {@code null} and no
+	 * 			endpoints are added with {@link #addEndpoint(Endpoint)}, it
+	 * 			will bind to CoAP's default port 5683 on {@link #start()}.
+	 */
+
+	public CoapServer(final NetworkConfig config, final ServerMessageDeliverer messageDeliverer, final int... ports) {
+		// global configuration that is passed down (can be observed for changes)
+		if (config != null) {
+			this.config = config;
+		} else {
+			this.config = NetworkConfig.getStandard();
+		}
+
+		// resources
+		if (messageDeliverer != null) {
+			this.root = messageDeliverer.getRootResource();
+			this.deliverer = messageDeliverer;
+		} else {
+			this.root = createRoot();
+			this.deliverer = new ServerMessageDeliverer(root);
+		}
+
+		CoapResource wellKnown = new CoapResource(".well-known");
+		wellKnown.setVisible(false);
+		wellKnown.add(new DiscoveryResource(root));
+		root.add(wellKnown);
+
+		// endpoints
+		this.endpoints = new ArrayList<>();
+		// create endpoint for each port
+		if (ports != null) {
+			for (int port : ports) {
+				CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+				builder.setPort(port);
+				builder.setNetworkConfig(config);
+				addEndpoint(builder.build());
+			}
+		}
+	}
+
 	public synchronized void setExecutors(final ScheduledExecutorService mainExecutor,
 			final ScheduledExecutorService secondaryExecutor, final boolean detach) {
 		if (mainExecutor == null || secondaryExecutor == null) {
